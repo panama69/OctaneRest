@@ -21,6 +21,9 @@ import org.json.*;
 import com.google.gson.*;
 
 // Read https://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples/client/ClientFormLogin.java
+
+// This can be used as a way to unit test Json response never used but looks interesting
+// https://github.com/rest-assured/rest-assured
 public class Defects {
 
 	public static void main(String[] args) throws ParseException,IOException {
@@ -195,8 +198,10 @@ public class Defects {
 	}
 	
 	public static void placeInObject (String js){
+		//https://github.com/google/gson/blob/master/UserGuide.md
+		//https://sites.google.com/site/gson/gson-user-guide#TOC-Using-Gson
 		Gson gson = new Gson();
 		Defect myDefect = gson.fromJson(js, Defect.class);
-		System.out.println("\t\tDefect ID from class: "+myDefect.getId()+ "  -->  "+js);
+		System.out.println("\t\tDefect ID from java class: "+myDefect.getId()+ "  -->  "+js);
 	}
 }
