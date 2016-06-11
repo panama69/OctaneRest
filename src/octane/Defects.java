@@ -20,6 +20,11 @@ import org.json.*;
 
 import com.google.gson.*;
 
+// jar files used
+//		httpcomponents-client-4.5.2
+//		json-20160212.jar
+//		gson-2.2.2.jar
+
 // Read https://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples/client/ClientFormLogin.java
 
 // This can be used as a way to unit test Json response never used but looks interesting
@@ -33,7 +38,7 @@ public class Defects {
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		try {
-			HttpHost target = new HttpHost("10.0.0.13", 8080, "http");
+			HttpHost target = new HttpHost("192.168.100.100", 8080, "http");
 
 			// specify the get request
 			/* These values are what Octane gave you when you created the API Access in Octane admin area
@@ -43,8 +48,10 @@ public class Defects {
 			HttpPost postRequest = new HttpPost("/authentication/sign_in");
 			postRequest.addHeader("Content-Type", "application/json");
 			JSONObject apiKey = new JSONObject();
-			apiKey.put("client_id", "Pogo_5g21wdy5dqnnjuno339qnwv04");
-			apiKey.put("client_secret", "%97db984e797540c2N");
+			//Client ID: pogo_pvk4xwkk446dmh20q215ox98e
+			//Client secret: @67a510889324d78G
+			apiKey.put("client_id", "pogo_pvk4xwkk446dmh20q215ox98e");
+			apiKey.put("client_secret", "@67a510889324d78G");
 
 			StringEntity param = new StringEntity(apiKey.toString());
 			postRequest.setEntity(param);
