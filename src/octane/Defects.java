@@ -41,15 +41,12 @@ public class Defects {
 			HttpHost target = new HttpHost("192.168.100.101", 8080, "http");
 
 			// specify the get request
-			/* These values are what Octane gave you when you created the API Access in Octane admin area
-			 * Client ID: Pogo_5g21wdy5dqnnjuno339qnwv04 
-			 * Client secret: %97db984e797540c2N
-			 */
 			HttpPost postRequest = new HttpPost("/authentication/sign_in");
 			postRequest.addHeader("Content-Type", "application/json");
 			JSONObject apiKey = new JSONObject();
-			//Client ID: pogo_pvk4xwkk446dmh20q215ox98e
-			//Client secret: @67a510889324d78G
+			// These values are what Octane gave you when you created the API Access in Octane admin area
+			// Client ID: pogo_pvk4xwkk446dmh20q215ox98e
+			// Client secret: @67a510889324d78G
 			apiKey.put("client_id", "pogo_pvk4xwkk446dmh20q215ox98e");
 			apiKey.put("client_secret", "@67a510889324d78G");
 
