@@ -38,7 +38,7 @@ public class Defects {
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		try {
-			HttpHost target = new HttpHost("192.168.100.100", 8080, "http");
+			HttpHost target = new HttpHost("192.168.100.101", 8080, "http");
 
 			// specify the get request
 			/* These values are what Octane gave you when you created the API Access in Octane admin area
