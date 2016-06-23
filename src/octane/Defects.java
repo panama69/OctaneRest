@@ -2,6 +2,9 @@ package octane;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.List;
 
 import org.apache.http.Header;
@@ -30,25 +33,34 @@ import com.google.gson.*;
 // This can be used as a way to unit test Json response never used but looks interesting
 // https://github.com/rest-assured/rest-assured
 public class Defects {
-
-	public static void main(String[] args) throws ParseException,IOException {
+	public static String OCTANE_SERVER = "10.0.0.35";
+	public static int PORT = 8080;
+	public static String SHAREDSPACE_ID = "1001";
+	public static String WORKSPACE_ID = "1002";
+	// These values are what Octane gave you when you created the API Access in Octane admin area
+	//Client ID: pogo_1p45r0kvo64g7f40j4x2dyjov
+	//Client secret: ?fc6a2678b5dc047S
+	public static String CLIENT_ID = "pogo_1p45r0kvo64g7f40j4x2dyjov";
+	public static String CLIENT_SECRET = "?fc6a2678b5dc047S";
+	public static String BASE_URI = "/api/shared_spaces/"+SHAREDSPACE_ID+"/workspaces/"+WORKSPACE_ID;
+	
+	public static void main(String[] args) throws ParseException,IOException, URISyntaxException {
 		String hpsso_cookie_key = null;
 		String lwsso_cookie_key = null;
 		String octane_cookie_key = null;
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		try {
-			HttpHost target = new HttpHost("192.168.100.101", 8080, "http");
+			HttpHost target = new HttpHost(OCTANE_SERVER, PORT, "http");
 
 			// specify the get request
 			HttpPost postRequest = new HttpPost("/authentication/sign_in");
 			postRequest.addHeader("Content-Type", "application/json");
 			JSONObject apiKey = new JSONObject();
-			// These values are what Octane gave you when you created the API Access in Octane admin area
-			// Client ID: pogo_pvk4xwkk446dmh20q215ox98e
-			// Client secret: @67a510889324d78G
-			apiKey.put("client_id", "pogo_pvk4xwkk446dmh20q215ox98e");
-			apiKey.put("client_secret", "@67a510889324d78G");
+			apiKey.put("client_id", CLIENT_ID);
+			apiKey.put("client_secret", CLIENT_SECRET);
+			//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
+			//postRequest.addHeader("HPECLIENTTPE", "HPE_REST_API_BETA");
 
 
 			StringEntity param = new StringEntity(apiKey.toString());
@@ -103,14 +115,9 @@ public class Defects {
 			}
 
 			System.out.println("---------------- Get Request ----------------");
-			HttpGet getRequest = new HttpGet(
-					"/api/shared_spaces/1001/workspaces/1002/defects?fields=logical_name,name");//&order_by=id&limit=2");
-
-			getRequest.addHeader("Cookie", hpsso_cookie_key);
-			getRequest.addHeader("Cookie", lwsso_cookie_key);
-			// getRequest.addHeader("OCTANE_USER", octane_cookie_key);
-			getRequest.addHeader("Accept", "application/json");
-			getRequest.addHeader("Content-Type", "application/json");
+			HttpGet getRequest = setRequestHeaders(hpsso_cookie_key, lwsso_cookie_key);
+			getRequest.setURI(URI.create (BASE_URI+ "/defects?fields=logical_name,name"));	//&order_by=id&limit=2"
+			
 			System.out.println("executing request to " + target
 					+ getRequest.getURI());
 
@@ -135,8 +142,11 @@ public class Defects {
 					System.out.println("Processing array...");
 					processJSONArray (jo.getJSONArray(elementName));
 				} else
-					System.out.println("Element: "+elementName+" not an array");
+					System.out.println("Element: '"+elementName+"' is not an array");
 			}
+			
+			s = useMetaData(httpClient, target, getRequest, hpsso_cookie_key, lwsso_cookie_key);
+
 		} finally {
 		}
 	}
@@ -194,11 +204,10 @@ public class Defects {
 		
 		//BagOfPrimitives obj2 = gson.fromJson(json, BagOfPrimitives.class);
 		for (int x = 0; x < ja.length(); x++) {
-			placeInObject (ja.getJSONObject(x).toString());
+		//	placeInObject (ja.getJSONObject(x).toString());
 			System.out.println("\tDefect Name: ("
 					+ ja.getJSONObject(x).get("id") + ")"
 					+ ja.getJSONObject(x).getString("name"));
-
 		}
 	}
 	
@@ -208,5 +217,45 @@ public class Defects {
 		Gson gson = new Gson();
 		Defect myDefect = gson.fromJson(js, Defect.class);
 		System.out.println("\t\tDefect ID from java class: "+myDefect.getId()+ "  -->  "+js);
+	}
+	
+	public static HttpGet setRequestHeaders(String hpsso_cookie_key, String lwsso_cookie_key){
+		HttpGet getRequest = new HttpGet();
+
+		getRequest.addHeader("Cookie", hpsso_cookie_key);
+		getRequest.addHeader("Cookie", lwsso_cookie_key);
+		// getRequest.addHeader("OCTANE_USER", octane_cookie_key);
+		getRequest.addHeader("Accept", "application/json");
+		getRequest.addHeader("Content-Type", "application/json");
+		//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
+		getRequest.addHeader("HPECLIENTTYPE", "HPE_REST_API_BETA");
+		
+		return getRequest;
+	}
+	
+	public static String useMetaData (HttpClient httpClient, HttpHost target, HttpGet getRequest, String hpsso_cookie_key, String lwsso_cookie_key) throws ParseException, IOException, URISyntaxException{
+		System.out.println("---------------- Get Request ----------------");
+ 
+		//URI myUri = URI.create(BASE_URI+URLEncoder.encode("/metadata/entities", "UTF8")); //?query="id EQ 1001", "UTF8"));
+		//URI myUri = URI.create(BASE_URI+"/metadata/entities");
+		//URI myUri = URI.create(BASE_URI+"/user_tags");
+
+		String q = "\"name EQ ^defect^\"";
+		getRequest.setURI(URI.create(BASE_URI+"/metadata/entities?query="+URLEncoder.encode(q, "UTF-8")));
+		//getRequest.setURI(URI.create(BASE_URI+"/metadata/entities"));
+
+		System.out.println("executing request to "
+				+ getRequest.getURI());
+
+		HttpResponse httpResponse = httpClient.execute(target, getRequest);
+
+		// System.out.println("RESPONSE:" + httpResponse.toString());
+		HttpEntity entity = httpResponse.getEntity();
+		String s = EntityUtils.toString(entity);
+		if (entity != null) {
+			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
+		}
+		
+		return s;
 	}
 }
