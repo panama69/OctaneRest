@@ -1,7 +1,10 @@
 package octane;
 
+import octane.api.*;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -11,6 +14,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -32,99 +36,44 @@ import com.google.gson.*;
 
 // This can be used as a way to unit test Json response never used but looks interesting
 // https://github.com/rest-assured/rest-assured
-public class Defects {
-	//public static String OCTANE_SERVER = "10.0.0.35";
-	//public static int PORT = 8080;
-	public static String OCTANE_SERVER = "hackathon.almoctane.com";
-	public static int PORT = 443;
-	public static String SHAREDSPACE_ID = "1001";
-	public static String WORKSPACE_ID = "1002";
-	// These values are what Octane gave you when you created the API Access in Octane admin area
-	//for docker image
-	//Client ID: pogo_1p45r0kvo64g7f40j4x2dyjov
-	//Client secret: ?fc6a2678b5dc047S
-	//public static String CLIENT_ID = "pogo_1p45r0kvo64g7f40j4x2dyjov";
-	//public static String CLIENT_SECRET = "?fc6a2678b5dc047S";
-	
-	//for hackathon https://hackathon.almoctane.com/
-	//hackathon@user Mission-impossible
-	//Client ID: flynn_9q7rewxl8y5kksn72737g01yz
-	//Client secret: @e754f645df745fdR
-	public static String CLIENT_ID = "flynn_9q7rewxl8y5kksn72737g01yz";
-	public static String CLIENT_SECRET = "@e754f645df745fdR";
-
-	public static String BASE_SHAREDSPACES_URI = "/api/shared_spaces/"+SHAREDSPACE_ID;
-	public static String BASE_WORKSPACES_URI = BASE_SHAREDSPACES_URI+"/workspaces/"+WORKSPACE_ID;
+public class OctaneApiDemo {
 	
 	public static void main(String[] args) throws ParseException,IOException, URISyntaxException {
-		String hpsso_cookie_key = null;
-		String lwsso_cookie_key = null;
-		String octane_cookie_key = null;
-
-		HttpClient httpClient = HttpClientBuilder.create().build();
-		try {
-			HttpHost target = new HttpHost(OCTANE_SERVER, PORT, "https");
-
-			// specify the get request
-			HttpPost postRequest = new HttpPost("/authentication/sign_in");
-			postRequest.addHeader("Content-Type", "application/json");
-			JSONObject apiKey = new JSONObject();
-			apiKey.put("client_id", CLIENT_ID);
-			apiKey.put("client_secret", CLIENT_SECRET);
-			//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
-			//postRequest.addHeader("HPECLIENTTPE", "HPE_REST_API_BETA");
-
-
-			StringEntity param = new StringEntity(apiKey.toString());
-			postRequest.setEntity(param);
-
-			System.out.println("Executing post request to: " + target);
-
-			HttpResponse httpResponse = httpClient.execute(target, postRequest);
-
-			// System.out.println("RESPONSE:" + httpResponse.toString());
-			HttpEntity entity = httpResponse.getEntity();
-
-			System.out
-					.println("---------------- Post Response ----------------");
-			System.out.println(httpResponse.getStatusLine());
-			Header[] headers = httpResponse.getAllHeaders();
-			for (int i = 0; i < headers.length; i++) {
-				System.out.println(headers[i]);
-				if (headers[i].getName().equals("Set-Cookie")) {
-					if (headers[i].getValue()
-							.substring(0, headers[i].getValue().indexOf("="))
-							.equals("LWSSO_COOKIE_KEY") == true) {
-						lwsso_cookie_key = headers[i].getValue().substring(0,
-								headers[i].getValue().indexOf(";"));
-						//System.out.println("my lwsso:" + lwsso_cookie_key);
-					}
-					if (headers[i].getValue()
-							.substring(0, headers[i].getValue().indexOf("="))
-							.equals("HPSSO_COOKIE_CSRF")) {
-						// parse
-						hpsso_cookie_key = headers[i].getValue().substring(0,
-								headers[i].getValue().indexOf(";"));
-						//System.out.println("my hpsso:" + hpsso_cookie_key);
-					}
-					if (headers[i].getValue()
-							.substring(0, headers[i].getValue().indexOf("="))
-							.equals("OCTANE_USER")) {
-						// parse
-						octane_cookie_key = headers[i].getValue().substring(0,
-								headers[i].getValue().indexOf(";"));
-						//System.out.println("my octane user:"+ octane_cookie_key);
-					}
-				}
-
-			}
-			System.out
-					.println("---------------- End Post Response ----------------");
-
-			if (entity != null) {
-				System.out.println(EntityUtils.toString(entity));
-			}
-
+        // Input validation
+		// for later implementation
+        /*
+        if (args.length == 1) {
+            String command = args[0];
+            if (!command.equalsIgnoreCase("help")) {
+                System.err.println("Unknown command: " + command);
+            }
+            System.out.println(USAGE);
+            return;
+        } else if (args.length == 2) {
+            client_id = args[0];
+            client_secret = args[1];
+        } else {
+            System.err.println(USAGE);
+            return;
+        }*/
+		//OctaneApiImp.test();
+        // 1. Authorize step
+		List<org.apache.http.cookie.Cookie> octaneCookies = null;
+        try {
+            octaneCookies = OctaneApiImp.authenticate(constants.CLIENT_ID, constants.CLIENT_SECRET);
+        } catch (IOException e) {
+            System.out.println("failed to authorise (get cookies)" + e.getMessage());;
+            return;
+        }
+        //printLine();
+        
+        // 2. get list of Defects
+        OctaneApiImp.getDefects(octaneCookies);
+        
+        // 3. put Defects
+        //OctaneApiImp.putDefects(octaneCookies);
+        // -----------------------------------------------------------------------------------
+/*
 			System.out.println("---------------- Get Request ----------------");
 			HttpGet getRequest = setRequestHeaders(hpsso_cookie_key, lwsso_cookie_key);
 			getRequest.setURI(URI.create (BASE_WORKSPACES_URI+ "/defects?fields=logical_name,name"));	//&order_by=id&limit=2"
@@ -192,6 +141,7 @@ public class Defects {
 			}
 		} finally {
 		}
+		*/
 	}
 	public static void printElementNames (JSONObject jo){
 		// print out the element names that occur in the JSONObject
