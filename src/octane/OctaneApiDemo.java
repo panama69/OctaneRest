@@ -70,41 +70,13 @@ public class OctaneApiDemo {
         // 2. get list of Defects
         OctaneApiImp.getDefects(octaneCookies);
         
+        OctaneApiImp.getWorkspaceApiEntities();
+        OctaneApiImp.getSharedspaceApiEntities();
+        OctaneApiImp.getGherkinTests();
         // 3. put Defects
         //OctaneApiImp.putDefects(octaneCookies);
         // -----------------------------------------------------------------------------------
 /*
-			System.out.println("---------------- Get Request ----------------");
-			HttpGet getRequest = setRequestHeaders(hpsso_cookie_key, lwsso_cookie_key);
-			getRequest.setURI(URI.create (BASE_WORKSPACES_URI+ "/defects?fields=logical_name,name"));	//&order_by=id&limit=2"
-			
-			System.out.println("executing request to " + target
-					+ getRequest.getURI());
-
-			httpResponse = httpClient.execute(target, getRequest);
-
-			// System.out.println("RESPONSE:" + httpResponse.toString());
-			entity = httpResponse.getEntity();
-			String s = EntityUtils.toString(entity);
-			if (entity != null) {
-				System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
-			}
-			System.out
-					.println("---------------- End Get Request ----------------");
-
-			checkIfObjectOrArray (s);
-			
-			JSONObject jo = new JSONObject(s);
-			printElementNames (jo);
-
-			for (String elementName: JSONObject.getNames(jo)){
-				if (isJSONArray(jo.get(elementName))){
-					System.out.println("Processing array...");
-					processJSONArray (jo.getJSONArray(elementName));
-				} else
-					System.out.println("Element: '"+elementName+"' is not an array");
-			}
-			
 			System.out.println("\r-------------- Available SHAREDSPACES Rest Entities -------------");
 			getRequest.setURI(URI.create (BASE_SHAREDSPACES_URI+ "/metadata/entities"));
 			s = getMetaData(httpClient, target, getRequest, hpsso_cookie_key, lwsso_cookie_key);

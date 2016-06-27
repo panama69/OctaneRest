@@ -8,27 +8,15 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.http.Header;
-//import org.apache.http.HttpEntity;
+import org.apache.http.*;
+import org.apache.http.client.*;
+import org.apache.http.cookie.*;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.ByteArrayEntity;
-//import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.client.methods.*;
+import org.apache.http.client.protocol.*;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-//import org.apache.http.util.EntityUtils;
+import org.apache.http.impl.client.*;
+import org.apache.http.util.*;
 import org.json.*;
 
 //import com.hpe.apppulse.openapi.apppulseopenapi.constants;
@@ -36,10 +24,10 @@ import org.json.*;
 //import com.hpe.apppulse.openapi.Utils.HttpUtils;
 
 public class OctaneApiImp {
-    
-	private static HttpClient httpClient = HttpClientBuilder.create().setDefaultCookieStore(new BasicCookieStore()).build();;
-	private static HttpHost target = new HttpHost(constants.OCTANE_URL_PREFIX, constants.PORT, "https");
+
 	private static CookieStore cookieStore = new BasicCookieStore();
+	private static HttpClient httpClient = HttpClientBuilder.create().setDefaultCookieStore(cookieStore).build();;
+	private static HttpHost target = new HttpHost(constants.OCTANE_URL_PREFIX, constants.PORT, constants.HTTPTYPE);
 	private static HttpClientContext localContext = HttpClientContext.create();
 	
 	public static List<org.apache.http.cookie.Cookie> authenticate (String client_id, String client_secret) throws IOException {
@@ -51,6 +39,7 @@ public class OctaneApiImp {
 
 		// Bind custom cookie store to the local context
 	    localContext.setCookieStore(cookieStore);
+
 
 		try {
 			// specify the get request
@@ -73,8 +62,11 @@ public class OctaneApiImp {
 			System.out.println("Executing post request to: " + target);
 
             try{
-            	//httpResponse = httpClient.execute(target, postRequest, localContext);
             	httpResponse = httpClient.execute(target, postRequest, localContext);
+        	    List<Cookie> cl = cookieStore.getCookies();
+        	    for (Cookie x:cl){
+        	    	System.out.println("returned cookies: "+x.getName()+"---"+x.getValue()+"--"+x.getPath());
+        	    }
             }
             catch(IOException e){
                 System.out.printf(String.format("Failed to execute authenticate:%s%s", System.lineSeparator(), e.getMessage()));
@@ -90,6 +82,11 @@ public class OctaneApiImp {
             }
 
             cookies = cookieStore.getCookies();
+            
+            System.out.println("Cookies returned");
+            for (Cookie c:cookies){
+            	System.out.println(c.getName()+":"+c.getValue());
+            }
 
 			System.out.println(httpResponse.getStatusLine());
 
@@ -104,7 +101,7 @@ public class OctaneApiImp {
 	}
 	
 	public static void getDefects (List<org.apache.http.cookie.Cookie> cookies) throws IOException{
-		System.out.println("---------------- Get Request ----------------");
+		System.out.println("---------------- Get Defects Request ----------------");
 		HttpGet getRequest = new HttpGet();
 		//localContext.setCookieStore(cookieStore);
 		
@@ -146,7 +143,7 @@ public class OctaneApiImp {
 		if (s != null) {
 			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
 		}
-		System.out.println("---------------- End Get Request ----------------");
+		System.out.println("---------------- End Get Defects Request ----------------");
 
 //		checkIfObjectOrArray (s);
 		
@@ -163,6 +160,156 @@ public class OctaneApiImp {
 
 	}
 
+	public static void getWorkspaceApiEntities () throws IOException{
+		System.out.println("------ Start Get Workspace API Entities ----");
+		HttpGet getRequest = new HttpGet();
+		//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
+		getRequest.addHeader("HPECLIENTTYPE", "HPE_REST_API_BETA");
+		System.out.println("Executing get request to: " + target);
+
+		getRequest.setURI(URI.create (constants.OCTANE_WORKSPACE_URI+ constants.META_DATA));
+		
+		System.out.println("executing request to " + target
+				+ getRequest.getURI());
+		
+		HttpResponse httpResponse = null;
+        try{
+        	httpResponse = httpClient.execute(target, getRequest, localContext);
+        }
+        catch(IOException e){
+            System.out.printf(String.format("Failed to execute getDefects:%s%s", System.lineSeparator(), e.getMessage()));
+            throw e;
+        }
+
+        // Analyze response
+        if(httpResponse.getStatusLine().getStatusCode() != 200){
+        	System.err.println("Failed to execute getWorkspaceApiEntities got status code: " + httpResponse.getStatusLine().getStatusCode() +
+        			System.lineSeparator() + "Reason: " + httpResponse.getStatusLine().getReasonPhrase() +
+        			System.lineSeparator());
+        	//return ;
+        }
+
+		// System.out.println("RESPONSE:" + httpResponse.toString());
+
+		String s = EntityUtils.toString(httpResponse.getEntity());
+		if (s != null) {
+			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
+		}
+		
+		JSONObject jo = new JSONObject(s);
+		printApiEntities(jo);
+		
+		System.out.println("------ End Get Workspace API Entities ----");
+	}
+
+	public static void getSharedspaceApiEntities () throws IOException{
+		System.out.println("------ Start Get Sharespace API Entities ----");
+		HttpGet getRequest = new HttpGet();
+		//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
+		getRequest.addHeader("HPECLIENTTYPE", "HPE_REST_API_BETA");
+		System.out.println("Executing get request to: " + target);
+
+		getRequest.setURI(URI.create (constants.SHAREDSPACES_URI+ constants.META_DATA));
+		
+		System.out.println("executing request to " + target
+				+ getRequest.getURI());
+		
+		HttpResponse httpResponse = null;
+        try{
+        	httpResponse = httpClient.execute(target, getRequest, localContext);
+        }
+        catch(IOException e){
+            System.out.printf(String.format("Failed to execute getDefects:%s%s", System.lineSeparator(), e.getMessage()));
+            throw e;
+        }
+
+        // Analyze response
+        if(httpResponse.getStatusLine().getStatusCode() != 200){
+        	System.err.println("Failed to execute getSharedspaceApiEntities got status code: " + httpResponse.getStatusLine().getStatusCode() +
+        			System.lineSeparator() + "Reason: " + httpResponse.getStatusLine().getReasonPhrase() +
+        			System.lineSeparator());
+        	//return ;
+        }
+
+		// System.out.println("RESPONSE:" + httpResponse.toString());
+
+		String s = EntityUtils.toString(httpResponse.getEntity());
+		if (s != null) {
+			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
+		}
+		
+		
+		JSONObject jo = new JSONObject(s);
+		printApiEntities(jo);
+		System.out.println("------ End Get Sharedspace API Entities ----");
+	}
+
+	private static void printApiEntities(JSONObject jo) {
+		for (int x=0; x< jo.getInt("total_count"); x++){
+			//System.out.println(jo.getJSONArray("data").getJSONObject(x).get("features").toString());
+			JSONArray entity1 = jo.getJSONArray("data").getJSONObject(x).getJSONArray("features");
+			for (int y=0; y<entity1.length(); y++){
+				try {
+					//String.format("%4d", i * j);
+					System.out.println(String.format("%30s",entity1.getJSONObject(y).get("url"))+"\t"+entity1.getJSONObject(y).get("methods"));
+				} catch (JSONException e){
+					
+				}
+			}
+		}
+	}
+
+	public static void getGherkinTests () throws IOException{
+		System.out.println("---------------- Get Gherkin Tests Request ----------------");
+		HttpGet getRequest = new HttpGet();
+		
+		System.out.println("Executing get request to: " + target);
+
+		getRequest.setURI(URI.create (constants.OCTANE_WORKSPACE_URI+ "/gherkin_tests"));	//&order_by=id&limit=2"
+		
+		System.out.println("executing request to " + target
+				+ getRequest.getURI());
+		
+		HttpResponse httpResponse = null;
+        try{
+        	httpResponse = httpClient.execute(target, getRequest, localContext);
+        }
+        catch(IOException e){
+            System.out.printf(String.format("Failed to execute getGherkinTests:%s%s", System.lineSeparator(), e.getMessage()));
+            throw e;
+        }
+
+        // Analyze response
+        if(httpResponse.getStatusLine().getStatusCode() != 200){
+        	System.err.println("Failed to execute getGherkinTests got status code: " + httpResponse.getStatusLine().getStatusCode() +
+        			System.lineSeparator() + "Reason: " + httpResponse.getStatusLine().getReasonPhrase() +
+        			System.lineSeparator());
+        	//return ;
+        }
+
+		// System.out.println("RESPONSE:" + httpResponse.toString());
+
+		String s = EntityUtils.toString(httpResponse.getEntity());
+		if (s != null) {
+			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
+		}
+		System.out.println("---------------- End Get Gherkin Tests Request ----------------");
+
+//		checkIfObjectOrArray (s);
+		
+		JSONObject jo = new JSONObject(s);
+//		printElementNames (jo);
+
+//		for (String elementName: JSONObject.getNames(jo)){
+//			if (isJSONArray(jo.get(elementName))){
+//				System.out.println("Processing array...");
+//				processJSONArray (jo.getJSONArray(elementName));
+//			} else
+//				System.out.println("Element: '"+elementName+"' is not an array");
+//		}
+
+	}
+	
 	public static void putDefects (List<org.apache.http.cookie.Cookie> cookies) throws IOException{
 
 		System.out.println("Starting putDefects ... ");	
