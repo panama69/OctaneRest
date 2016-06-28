@@ -16,6 +16,7 @@ import org.apache.http.client.methods.*;
 import org.apache.http.client.protocol.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.*;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.*;
 import org.json.*;
 
@@ -103,12 +104,10 @@ public class OctaneApiImp {
 	public static void getDefects (List<org.apache.http.cookie.Cookie> cookies) throws IOException{
 		System.out.println("---------------- Get Defects Request ----------------");
 		HttpGet getRequest = new HttpGet();
-		//localContext.setCookieStore(cookieStore);
 		
 		//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
 		//getRequest.addHeader("HPECLIENTTYPE", cookies.getHpClientType());
-		//getRequest.addHeader("Accept", "application/json");
-		//getRequest.addHeader("Content-Type", "application/json");
+
 		//for (HttpCookie cookie:cookies){
 		//	getRequest.addHeader(cookie.getName(), cookie.getValue());
 		//}
@@ -209,7 +208,7 @@ public class OctaneApiImp {
 		getRequest.addHeader("HPECLIENTTYPE", "HPE_REST_API_BETA");
 		System.out.println("Executing get request to: " + target);
 
-		getRequest.setURI(URI.create (constants.SHAREDSPACES_URI+ constants.META_DATA));
+		getRequest.setURI(URI.create (constants.SHAREDSPACES_URI+constants.META_DATA)); // "/metadata/fields"));
 		
 		System.out.println("executing request to " + target
 				+ getRequest.getURI());
@@ -293,46 +292,89 @@ public class OctaneApiImp {
 		if (s != null) {
 			System.out.println("Json Response: " + s);// EntityUtils.toString(entity));
 		}
+
 		System.out.println("---------------- End Get Gherkin Tests Request ----------------");
 
 //		checkIfObjectOrArray (s);
 		
 		JSONObject jo = new JSONObject(s);
-//		printElementNames (jo);
-
-//		for (String elementName: JSONObject.getNames(jo)){
-//			if (isJSONArray(jo.get(elementName))){
-//				System.out.println("Processing array...");
-//				processJSONArray (jo.getJSONArray(elementName));
-//			} else
-//				System.out.println("Element: '"+elementName+"' is not an array");
-//		}
-
+			JSONArray entity1 = jo.getJSONArray("data");
+			for (int y=0; y<entity1.length(); y++){
+				try {
+					//String.format("%4d", i * j);
+					System.out.println(String.format("%30s",entity1.getJSONObject(y).get("type"))+"\t"+entity1.getJSONObject(y).get("name"));
+				} catch (JSONException e){
+					
+				}
+			}
 	}
 	
 	public static void putDefects (List<org.apache.http.cookie.Cookie> cookies) throws IOException{
 
 		System.out.println("Starting putDefects ... ");	
-		//localContext.setCookieStore(cookieStore);
 		
 		HttpResponse httpResponse = null;
 		try {
 			// specify the get request
-			HttpPost postRequest = new HttpPost(constants.OCTANE_WORKSPACE_URI+"/Defects");
+			HttpPost postRequest = new HttpPost(constants.OCTANE_WORKSPACE_URI+"/defects");
+			System.out.println(postRequest.getURI().toString());
 			postRequest.addHeader("Content-Type", "application/json;charset=UTF-8");
 			//HPECLIENTTPE: HPE_REST_API_BETA needs to be added to use the beta rest api
 			//postRequest.addHeader("HPECLIENTTYPE", cookies.getHpClientType());
 			postRequest.addHeader("Accept", "application/json");
 			
-			//for (Cookie c:cookies){
-			//	postRequest.addHeader(c.getName(), c.getValue());
-			//}
+			for (Cookie c:localContext.getCookieStore().getCookies()){
+				System.out.println("Add header:"+c.getName()+" <-> "+c.getValue());
+				postRequest.addHeader("Cookie", c.getName()+"="+c.getValue());
+				
+				if (c.getName().equalsIgnoreCase("HPSSO_COOKIE_CSRF")){
+					postRequest.addHeader("HPSSO-HEADER-CSRF", c.getValue());
+				}
+			}
+
+			/*
+			{
+  "data": [
+    {
+     "type":"defect",
+     "name":"corndog100",
+     "description":"<html><body>\ngood times\n</body></html>",
+
+     "parent":
+          {"type":"work_item_root",
+          "id":1001
+          },
+
+     "detected_by":
+          {"type":"workspace_user",
+            "id":2003
+          },
+
+     "severity": 
+          {"type":"list_node",
+           "id": 1002
+          },
+
+      "phase":
+           {"type":"phase",
+             "id":1001
+           },
+           
+        "owner": {
+    		"type": "workspace_user",
+    		"id": 2003
+  			},
+   }
+  ]
+}
+			 */
 			//create json to send
 			JSONObject jo = new JSONObject();
 			JSONObject parent =new JSONObject();
 			JSONObject detected_by =new JSONObject();
 			JSONObject severity =new JSONObject();
 			JSONObject phase =new JSONObject();
+			JSONObject owner = new JSONObject();
 			jo.put("type", "defect");
 			jo.put("name", "corndog100");
 			jo.put("description", "<html><body>\\ncorndogs are delicious\\n</body></html>");
@@ -343,16 +385,24 @@ public class OctaneApiImp {
 			detected_by.put("id", 2003);
 			jo.put("detected_by", detected_by);
 			severity.put("type", "list_node");
-			severity.put("id", 1002);
+			severity.put("id", 1002); //1002); //Dave Flynn account 2033
 			jo.put("severity", severity);
 			phase.put("type", "phase");
 			phase.put("id", 1001);
 			jo.put("phase", phase);
+			owner.put("type", "workspace_user");
+			owner.put("id", 2033); //Dave Flynn account
+			jo.put("owner", owner);
+			
 			
 			JSONArray ja = new JSONArray();
 			ja.put(0, jo);
 			
-			postRequest.setEntity(new StringEntity(ja.toString(), "UTF-8"));
+			JSONObject j = new JSONObject();
+			j.put("data", ja);
+			
+			System.out.println("Json>>>>"+j.toString());
+			postRequest.setEntity(new StringEntity(j.toString(), "UTF-8"));
 			System.out.println("---------------- Post ----------------");
 			System.out.println("Executing post request to: " + target);
 			for(int x=0; x< postRequest.getAllHeaders().length; x++){

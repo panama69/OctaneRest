@@ -3,29 +3,21 @@ package octane;
 import octane.api.*;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpCookie;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.List;
 
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
-import org.apache.http.cookie.Cookie;
 import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.*;
 
 import com.google.gson.*;
+
+import apppulse.api.OctaneApppulseApiImp;
 
 // jar files used
 //		httpcomponents-client-4.5.2
@@ -58,6 +50,9 @@ public class OctaneApiDemo {
         }*/
 		//OctaneApiImp.test();
         // 1. Authorize step
+		OctaneApppulseApiImp.authenticate("672149734#C1", "99696968-001a-4144-bff9-cc34698e8265");
+		OctaneApppulseApiImp.getApplications("99696968-001a-4144-bff9-cc34698e8265");
+		
 		List<org.apache.http.cookie.Cookie> octaneCookies = null;
         try {
             octaneCookies = OctaneApiImp.authenticate(constants.CLIENT_ID, constants.CLIENT_SECRET);
@@ -68,52 +63,16 @@ public class OctaneApiDemo {
         //printLine();
         
         // 2. get list of Defects
-        OctaneApiImp.getDefects(octaneCookies);
+        //OctaneApiImp.getDefects(octaneCookies);
         
-        OctaneApiImp.getWorkspaceApiEntities();
-        OctaneApiImp.getSharedspaceApiEntities();
-        OctaneApiImp.getGherkinTests();
         // 3. put Defects
         //OctaneApiImp.putDefects(octaneCookies);
-        // -----------------------------------------------------------------------------------
-/*
-			System.out.println("\r-------------- Available SHAREDSPACES Rest Entities -------------");
-			getRequest.setURI(URI.create (BASE_SHAREDSPACES_URI+ "/metadata/entities"));
-			s = getMetaData(httpClient, target, getRequest, hpsso_cookie_key, lwsso_cookie_key);
+        
+        // Misc
+        //OctaneApiImp.getWorkspaceApiEntities();
+        //OctaneApiImp.getSharedspaceApiEntities();
+        //OctaneApiImp.getGherkinTests();
 
-			jo = new JSONObject(s);
-			for (int x=0; x< jo.getInt("total_count"); x++){
-				//System.out.println(jo.getJSONArray("data").getJSONObject(x).get("features").toString());
-				JSONArray entity1 = jo.getJSONArray("data").getJSONObject(x).getJSONArray("features");
-				for (int y=0; y<entity1.length(); y++){
-					try {
-						//String.format("%4d", i * j);
-						System.out.println(String.format("%30s",entity1.getJSONObject(y).get("url"))+"\t"+entity1.getJSONObject(y).get("methods"));
-					} catch (JSONException e){
-						
-					}
-				}
-			}
-			System.out.println("\r-------------- Available WORKSPACES Rest Entities -------------");
-			getRequest.setURI(URI.create (BASE_WORKSPACES_URI+ "/metadata/entities"));
-			s = getMetaData(httpClient, target, getRequest, hpsso_cookie_key, lwsso_cookie_key);
-
-			jo = new JSONObject(s);
-			for (int x=0; x< jo.getInt("total_count"); x++){
-				//System.out.println(jo.getJSONArray("data").getJSONObject(x).get("features").toString());
-				JSONArray entity1 = jo.getJSONArray("data").getJSONObject(x).getJSONArray("features");
-				for (int y=0; y<entity1.length(); y++){
-					try {
-						//String.format("%4d", i * j);
-						System.out.println(String.format("%30s",entity1.getJSONObject(y).get("url"))+"\t"+entity1.getJSONObject(y).get("methods"));
-					} catch (JSONException e){
-						
-					}
-				}
-			}
-		} finally {
-		}
-		*/
 	}
 	public static void printElementNames (JSONObject jo){
 		// print out the element names that occur in the JSONObject
